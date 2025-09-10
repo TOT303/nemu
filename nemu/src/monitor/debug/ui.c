@@ -78,7 +78,7 @@ static int cmd_info(char *args) {
 
 static int cmd_step(char *args){
 	int N;
-	if (sscanf(args,"%d",&N)!=EOF){
+	if (sscanf(args,"%d",&N)!=0){
 		cpu_exec(N);
 	}
 	else cpu_exec(1);
