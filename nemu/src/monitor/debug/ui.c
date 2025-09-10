@@ -92,10 +92,9 @@ static struct {
 	{ "q", "Exit NEMU", cmd_q },
 
 	/* TODO: Add more commands */
-	{"step", "step one instruction", cmd_step},
-	{"info r", "Print register state", cmd_info},
-	{"step", "step one instruction", cmd_step},
-	{"x", "examine 内存", cmd_x},
+	{"si", "step N instruction", cmd_step},
+	{"info", "Print register state", cmd_info},
+	{"x", "examine memory", cmd_x},
 
 
 };
