@@ -45,28 +45,28 @@ static int cmd_info(char *args) {
 
 			switch (i){
 				case 0:
-				printf("eax %x",cpu.gpr[0]._32);
+				printf("eax   %x",cpu.gpr[0]._32);
 				break;
 				case 1:
-				printf("ecx %x",cpu.gpr[1]._32);
+				printf("ecx   %x",cpu.gpr[1]._32);
 				break;
 				case 2:
-				printf("edx %x",cpu.gpr[2]._32);
+				printf("edx   %x",cpu.gpr[2]._32);
 				break;
 				case 3:
-				printf("ebx %x",cpu.gpr[3]._32);
+				printf("ebx   %x",cpu.gpr[3]._32);
 				break;
 				case 4:
-				printf("esp %x",cpu.gpr[4]._32);
+				printf("esp   %x",cpu.gpr[4]._32);
 				break;
 				case 5:
-				printf("ebp %x",cpu.gpr[5]._32);
+				printf("ebp   %x",cpu.gpr[5]._32);
 				break;
 				case 6:
-				printf("esi %x",cpu.gpr[6]._32);
+				printf("esi   %x",cpu.gpr[6]._32);
 				break;
 				case 7:
-				printf("edi %x",cpu.gpr[7]._32);
+				printf("edi   %x",cpu.gpr[7]._32);
 				break;
 			}
 		printf("\n");
@@ -82,27 +82,16 @@ static int cmd_step(char *args){
 	return 0;
 }
 static int cmd_x(char *args) {
-    int count;
-    uint32_t addr;
-    int len = 4; 
-
-    // 解析参数（支持可选的长度参数）
-    if (sscanf(args, "%d %x %d", &count, &addr, &len) < 2) {
-        printf("Usage: x <count> <addr> [len=1|2|4]\n");
-        return -1;
-    }
-
-    // 检查长度合法性
-    if (len != 1 && len != 2 && len != 4) {
-        printf("Invalid length: %d. Use 1, 2, or 4.\n", len);
-        return -1;
-    }
+    int N;
+    uint32_t EXPR;
+    sscanf(args,"%d %x",&N,&EXPR);
 	int i;
-    // 逐个读取并打印内存值
-    for (i = 0; i < count; i++) {
-        uint32_t value = swaddr_read(addr + i * len, len);
-        printf("0x%08x: 0x%0*x\n", addr + i * len, len * 2, value);
-    }
+	for (i=0;i<N;i++){
+		uint32_t val=swaddr_read(EXPR+i*4,4);
+		printf("0x%08x: 0x%08x\n",EXPR+i*4,val);
+	}
+	
+
 
     return 0;
 }
