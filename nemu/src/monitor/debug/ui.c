@@ -84,7 +84,7 @@ static int cmd_step(char *args){
 static int cmd_x(char *args) {
     int count;
     uint32_t addr;
-    int len = 4; // 默认 4 字节
+    int len = 4; 
 
     // 解析参数（支持可选的长度参数）
     if (sscanf(args, "%d %x %d", &count, &addr, &len) < 2) {
