@@ -45,28 +45,28 @@ static int cmd_info(char *args) {
 
 			switch (i){
 				case 0:
-				printf("eax   %x   %d",cpu.gpr[0]._32,cpu.gpr[2]._32);
+				printf("eax   0x%x   %d",cpu.gpr[0]._32,cpu.gpr[0]._32);
 				break;
 				case 1:
-				printf("ecx   %x   %d",cpu.gpr[1]._32,cpu.gpr[2]._32);
+				printf("ecx   0x%x   %d",cpu.gpr[1]._32,cpu.gpr[1]._32);
 				break;
 				case 2:
-				printf("edx   %x   %d",cpu.gpr[2]._32,cpu.gpr[2]._32);
+				printf("edx   0x%x   %d",cpu.gpr[2]._32,cpu.gpr[2]._32);
 				break;
 				case 3:
-				printf("ebx   %x   %d",cpu.gpr[3]._32,cpu.gpr[2]._32);
+				printf("ebx   0x%x   %d",cpu.gpr[3]._32,cpu.gpr[3]._32);
 				break;
 				case 4:
-				printf("esp   %x   %d",cpu.gpr[4]._32,cpu.gpr[2]._32);
+				printf("esp   0x%x   %d",cpu.gpr[4]._32,cpu.gpr[4]._32);
 				break;
 				case 5:
-				printf("ebp   %x   %d",cpu.gpr[5]._32,cpu.gpr[2]._32);
+				printf("ebp   0x%x   %d",cpu.gpr[5]._32,cpu.gpr[5]._32);
 				break;
 				case 6:
-				printf("esi   %x   %d",cpu.gpr[6]._32,cpu.gpr[2]._32);
+				printf("esi   0x%x   %d",cpu.gpr[6]._32,cpu.gpr[6]._32);
 				break;
 				case 7:
-				printf("edi   %x   %d",cpu.gpr[7]._32,cpu.gpr[2]._32);
+				printf("edi   0x%x   %d",cpu.gpr[7]._32,cpu.gpr[7]._32);
 				break;
 			}
 		printf("\n");
