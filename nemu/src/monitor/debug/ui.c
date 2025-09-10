@@ -78,8 +78,10 @@ static int cmd_info(char *args) {
 
 static int cmd_step(char *args){
 	int N;
-	sscanf(args,"%d",&N);
-	cpu_exec(N);
+	if (sscanf(args,"%d",&N)){
+		cpu_exec(N);
+	}
+	else cpu_exec(1);
 	return 0;
 }
 
