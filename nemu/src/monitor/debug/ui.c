@@ -45,28 +45,28 @@ static int cmd_info(char *args) {
 
 			switch (i){
 				case 0:
-				printf("eax   %x",cpu.gpr[0]._32);
+				printf("eax   %x   %d",cpu.gpr[0]._32,cpu.gpr[2]._32);
 				break;
 				case 1:
-				printf("ecx   %x",cpu.gpr[1]._32);
+				printf("ecx   %x   %d",cpu.gpr[1]._32,cpu.gpr[2]._32);
 				break;
 				case 2:
-				printf("edx   %x",cpu.gpr[2]._32);
+				printf("edx   %x   %d",cpu.gpr[2]._32,cpu.gpr[2]._32);
 				break;
 				case 3:
-				printf("ebx   %x",cpu.gpr[3]._32);
+				printf("ebx   %x   %d",cpu.gpr[3]._32,cpu.gpr[2]._32);
 				break;
 				case 4:
-				printf("esp   %x",cpu.gpr[4]._32);
+				printf("esp   %x   %d",cpu.gpr[4]._32,cpu.gpr[2]._32);
 				break;
 				case 5:
-				printf("ebp   %x",cpu.gpr[5]._32);
+				printf("ebp   %x   %d",cpu.gpr[5]._32,cpu.gpr[2]._32);
 				break;
 				case 6:
-				printf("esi   %x",cpu.gpr[6]._32);
+				printf("esi   %x   %d",cpu.gpr[6]._32,cpu.gpr[2]._32);
 				break;
 				case 7:
-				printf("edi   %x",cpu.gpr[7]._32);
+				printf("edi   %x   %d",cpu.gpr[7]._32,cpu.gpr[2]._32);
 				break;
 			}
 		printf("\n");
@@ -75,12 +75,14 @@ static int cmd_info(char *args) {
 	
 	return 0;
 }
+
 static int cmd_step(char *args){
 	int N;
 	sscanf(args,"%d",&N);
 	cpu_exec(N);
 	return 0;
 }
+
 static int cmd_x(char *args) {
     int N;
     uint32_t EXPR;
@@ -90,11 +92,9 @@ static int cmd_x(char *args) {
 		uint32_t val=swaddr_read(EXPR+i*4,4);
 		printf("0x%08x: 0x%08x\n",EXPR+i*4,val);
 	}
-	
-
-
     return 0;
 }
+
 static struct {
 	char *name;
 	char *description;
