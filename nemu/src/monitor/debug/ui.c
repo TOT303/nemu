@@ -39,47 +39,52 @@ static int cmd_q(char *args) {
 static int cmd_help(char *args);
 
 static int cmd_info(char *args) {
-	int i;
-	for (i=0;i<8;i++){
+	if (*args=='r'){
+		int i;
+		for (i=0;i<8;i++){
 
-		switch (i){
-			case 0:
-			printf("eax %x",cpu.gpr[0]._32);
-			break;
-			case 1:
-			printf("ecx %x",cpu.gpr[1]._32);
-			break;
-			case 2:
-			printf("edx %x",cpu.gpr[2]._32);
-			break;
-			case 3:
-			printf("ebx %x",cpu.gpr[3]._32);
-			break;
-			case 4:
-			printf("esp %x",cpu.gpr[4]._32);
-			break;
-			case 5:
-			printf("ebp %x",cpu.gpr[5]._32);
-			break;
-			case 6:
-			printf("esi %x",cpu.gpr[6]._32);
-			break;
-			case 7:
-			printf("edi %x",cpu.gpr[7]._32);
-			break;
-		}
+			switch (i){
+				case 0:
+				printf("eax %x",cpu.gpr[0]._32);
+				break;
+				case 1:
+				printf("ecx %x",cpu.gpr[1]._32);
+				break;
+				case 2:
+				printf("edx %x",cpu.gpr[2]._32);
+				break;
+				case 3:
+				printf("ebx %x",cpu.gpr[3]._32);
+				break;
+				case 4:
+				printf("esp %x",cpu.gpr[4]._32);
+				break;
+				case 5:
+				printf("ebp %x",cpu.gpr[5]._32);
+				break;
+				case 6:
+				printf("esi %x",cpu.gpr[6]._32);
+				break;
+				case 7:
+				printf("edi %x",cpu.gpr[7]._32);
+				break;
+			}
 		printf("\n");
+		}
 	}
+	
 	return 0;
 }
 static int cmd_step(char *args){
-	cpu_exec(1);
+	int N;
+	sscanf(args,"%d",&N);
+	cpu_exec(N);
 	return 0;
 }
 static int cmd_x(char *args){
 	int N;
 	uint32_t EXPR;
-	sscanf(args,"x %d %x",&N,&EXPR);
+	sscanf(args,"%d %x",&N,&EXPR);
 	swaddr_read(EXPR,N);
 	return 0;
 }
