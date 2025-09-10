@@ -68,6 +68,7 @@ static int cmd_info(char *args) {
 			printf("edi %x",cpu.gpr[7]._32);
 			break;
 		}
+		printf("\n");
 	}
 	return 0;
 }
