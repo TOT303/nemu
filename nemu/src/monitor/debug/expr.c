@@ -1,5 +1,5 @@
 #include "nemu.h"
-
+#include <stdlib.h>
 /* We use the POSIX regex functions to process regular expressions.
  * Type 'man regex' for more information about POSIX regex functions.
  */
@@ -7,7 +7,7 @@
 #include <regex.h>
 
 enum {
-	NOTYPE = 256, EQ, NUM
+	NOTYPE = 256, EQ,NEQ, NUM,AND,OR,NOT,HEX,REG,DEREF,NEG
 	/* TODO: Add more token types */
 	
 };
@@ -22,7 +22,13 @@ static struct rule {
 	 */
 
 	{" +",	NOTYPE},        // spaces
-	{"==", EQ}				// equal	
+	{"==", EQ},				// equal
+	{"!=",NEQ},
+	{"&&",AND},
+	{"||",OR},
+	{"\\!",NOT}
+	{"0x[0-9]+",HEX},
+	{"\\$[a-z]+",REG},	
 	{"\\+", '+'},			// plus				
 	{"\\-",'-'},
 	{"\\*",'*'},
@@ -71,42 +77,44 @@ static bool make_token(char *e) {
 	while(e[position] != '\0') {
 		/* Try all rules one by one. */
 		for(i = 0; i < NR_REGEX; i ++) {
-			if(regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
+			if (regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
 				char *substr_start = e + position;
-				int substr_len = pmatch.rm_eo;
+				int   substr_len   = pmatch.rm_eo;
 
-				Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s", i, rules[i].regex, position, substr_len, substr_len, substr_start);
-				position += substr_len;
+				Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
+					i, rules[i].regex, position, substr_len, substr_len, substr_start);
 
-				/* TODO: Now a new token is recognized with rules[i]. Add codes
-				 * to record the token in the array `tokens'. For certain types
-				 * of tokens, some extra actions should be performed.
-				 */
+				char  tmp[32];
+				if (substr_len >= sizeof(tmp)) substr_len = sizeof(tmp) - 1;
+				strncpy(tmp, substr_start, substr_len);
+				tmp[substr_len] = '\0';
 
-				switch(rules[i].token_type) {
-					case (NOTYPE):
-					break;
-					case (EQ):
-					tokens->type[i]='=';break;
-					case ('+'):
-					tokens->type[i]='+';break;
-					case ('-'):
-					tokens->type[i]='-';break;
-					case ('*'):
-					tokens->type[i]='*';break;
-					case ('/'):
-					tokens->type[i]='/';break;
-					case (NUM):
-					tokens->type[i]=NUM;
-					tokens->str[i]=e[i];break;
-					case ('('):
-					tokens->type[i]='(';break;
-					case (')'):
-					tokens->type[i]=')';break;
+				position += substr_len;          
+
+				switch (rules[i].token_type) {
+					case NOTYPE: break;          
+					case EQ:
+					case NEQ:
+					case '(':
+					case ')':
+					case NUM:
+					case '+':
+					case '-':
+					case '*':
+					case '/':
+					case AND:
+					case OR:
+					case NOT:
+					case HEX:
+					case REG:                    
+						tokens[nr_token].type = rules[i].token_type;
+						strcpy(tokens[nr_token].str, tmp);
+						nr_token++;
+						break;
+
 					default: panic("please implement me");
 				}
-
-				break;
+				break;                    
 			}
 		}
 
@@ -118,8 +126,8 @@ static bool make_token(char *e) {
 
 	return true; 
 }
-bool checkparentheses(p, q) {
-	if (tokens->type[p]!='('||tokens->type[q]!=')'){
+static bool checkparentheses(int p,int q) {
+	if (tokens[p].type!='('||tokens[q].type!=')'){
 		return false;
 	}
 	int i=p;
@@ -127,11 +135,11 @@ bool checkparentheses(p, q) {
 	bool find_l=0;
 	bool find_r=0;
 	for (i;i<q-1;i++){
-		if (tokens->type[i]=='('){
+		if (tokens[i].type=='('){
 			find_l=1;
 		}
 		for (j;j>i;j--){
-			if (tokens->type[j]==')'){
+			if (tokens[j].type==')'){
 				find_r=1;
 				break;
 			}
@@ -147,11 +155,41 @@ bool checkparentheses(p, q) {
 	}
 	return true;
 }
-int find_op(p,q){
+static int priority(int type) {
+    switch (type) {
+		case AND: case OR: return 0;
+		case EQ: case NEQ   return 1;
+		case '+': case '-': return 2;
+		case '*': case '/': return 3;
+		case NOT: case DEREF: case NEG: return 4;
 
+		default:            return -1; 
+    }
+}
+static int find_op(int p,int q){
+	int pos=-1;
+	int i;
+	int pri=INT32_MAX;
+	for (i=p;i<q;i++){
+		if (priority(tokens[i].type)==-1){
+			continue;
+		}
+		int j=0;
+		int k=p;
+		for (k;k<i;k++){
+			if (tokens[k].type=='(') j++;
+			if (tokens[k].type==')') j--;
+		}
+		if (j!=0) continue;
+		if (pri>=priority(tokens[i].type)) {
+			pri=priority(tokens[i].type);
+			pos=i;
+		}
+	}
+	return pos;
 }
 
-uint32_t eval(p, q) {
+uint32_t eval(int p,int q) {
   if (p > q) {
     panic("eval wrong");
   }
@@ -159,7 +197,16 @@ uint32_t eval(p, q) {
     /* Single token.
        For now this token should be a number.
        Return the value of the number. */
-    return stoi(tokens->str[p]);
+	if (tokens[p].type==NUM){
+		return (uint32_t)stoi(tokens[p].str);
+	}
+	else if (tokens[p].type==HEX){
+		return (uint32_t)strtoul(tokens[p].str[0], NULL, 16);
+	}
+	else if (tokens[p].type==REG){
+		return swaddr_read();
+	}
+    assert(0);
   }
   else if (checkparentheses(p, q) == true) {
     /* The expression is surrounded by a matched pair of parentheses.
@@ -167,14 +214,19 @@ uint32_t eval(p, q) {
     return eval(p + 1, q - 1);
   }
   else {
-    op = tokens->type[p+1];
-    val1 = eval(p, op - 1);
-    val2 = eval(op + 1, q);
-    switch (op_type) {
+    int op = find_op(p,q);
+    uint32_t val1 = eval(p, op - 1);
+    uint32_t val2 = eval(op + 1, q);
+    switch (token[op].type) {
       case '+': return val1 + val2;
       case '-': return val1 - val2;
       case '*': return val1 * val2;
       case '/': return val1 / val2;
+	  case '==': return val1 ==val2;
+	  case '!=': return val1!=val2;
+	  case AND: return val1&&val2;
+	  case OR:return val1||val2;
+
       default: assert(0);
     }
   }
@@ -185,9 +237,9 @@ uint32_t expr(char *e, bool *success) {
 		return 0;
 	}
 
-	/* TODO: Insert codes to evaluate the expression. */
-	for(i = e; i < nr_token; i++){
-  		if(tokens[i].type == '*' && (i == 0 || tokens[i-1].type certaintype)) {
+	/* TODO: Insert cotokensdes to evaluate the expression. */
+	for(i = 0; i < nr_token; i++){
+  		if([i].type == '*' && (i == 0 || tokens[i-1].type !=NUM)) {
     		tokens[i].type = DEREF;
     		return eval(?, ?);
   		}	
