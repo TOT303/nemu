@@ -7,10 +7,9 @@
 #include <regex.h>
 
 enum {
-	NOTYPE = 256, EQ
-
+	NOTYPE = 256, EQ, NUM
 	/* TODO: Add more token types */
-
+	
 };
 
 static struct rule {
@@ -22,9 +21,15 @@ static struct rule {
 	 * Pay attention to the precedence level of different rules.
 	 */
 
-	{" +",	NOTYPE},				// spaces
-	{"\\+", '+'},					// plus
-	{"==", EQ}						// equal
+	{" +",	NOTYPE},        // spaces
+	{"==", EQ}				// equal	
+	{"\\+", '+'},			// plus				
+	{"\\-",'-'},
+	{"\\*",'*'},
+	{"\\/",'/'},
+	{"[0-9]+",NUM},
+	{"\\(",'('},
+	{"\\)",')'}
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
@@ -79,6 +84,25 @@ static bool make_token(char *e) {
 				 */
 
 				switch(rules[i].token_type) {
+					case (NOTYPE):
+					break;
+					case (EQ):
+					tokens->type[i]='=';break;
+					case ('+'):
+					tokens->type[i]='+';break;
+					case ('-'):
+					tokens->type[i]='-';break;
+					case ('*'):
+					tokens->type[i]='*';break;
+					case ('/'):
+					tokens->type[i]='/';break;
+					case (NUM):
+					tokens->type[i]=NUM;
+					tokens->str[i]=e[i];break;
+					case ('('):
+					tokens->type[i]='(';break;
+					case (')'):
+					tokens->type[i]=')';break;
 					default: panic("please implement me");
 				}
 
@@ -94,7 +118,67 @@ static bool make_token(char *e) {
 
 	return true; 
 }
+bool checkparentheses(p, q) {
+	if (tokens->type[p]!='('||tokens->type[q]!=')'){
+		return false;
+	}
+	int i=p;
+	int j=q;
+	bool find_l=0;
+	bool find_r=0;
+	for (i;i<q-1;i++){
+		if (tokens->type[i]=='('){
+			find_l=1;
+		}
+		for (j;j>i;j--){
+			if (tokens->type[j]==')'){
+				find_r=1;
+				break;
+			}
+			
+		}
+		if (find_l^find_r==0){
+			find_l=find_r=0;
+			continue;
+		}
+		else {
+			return false;
+			}
+	}
+	return true;
+}
+int find_op(p,q){
 
+}
+
+uint32_t eval(p, q) {
+  if (p > q) {
+    panic("eval wrong");
+  }
+  else if (p == q) {
+    /* Single token.
+       For now this token should be a number.
+       Return the value of the number. */
+    return stoi(tokens->str[p]);
+  }
+  else if (checkparentheses(p, q) == true) {
+    /* The expression is surrounded by a matched pair of parentheses.
+       If that is the case, just throw away the parentheses. */
+    return eval(p + 1, q - 1);
+  }
+  else {
+    op = tokens->type[p+1];
+    val1 = eval(p, op - 1);
+    val2 = eval(op + 1, q);
+    switch (op_type) {
+      case '+': return val1 + val2;
+      case '-': return val1 - val2;
+      case '*': return val1 * val2;
+      case '/': return val1 / val2;
+      default: assert(0);
+    }
+  }
+}
 uint32_t expr(char *e, bool *success) {
 	if(!make_token(e)) {
 		*success = false;
@@ -102,7 +186,15 @@ uint32_t expr(char *e, bool *success) {
 	}
 
 	/* TODO: Insert codes to evaluate the expression. */
+	for(i = e; i < nr_token; i++){
+  		if(tokens[i].type == '*' && (i == 0 || tokens[i-1].type certaintype)) {
+    		tokens[i].type = DEREF;
+    		return eval(?, ?);
+  		}	
+	}
 	panic("please implement me");
 	return 0;
 }
+
+
 
