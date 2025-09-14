@@ -99,6 +99,18 @@ static int cmd_x(char *args) {
 	}
     return 0;
 }
+static int cmd_p(char *args) {
+	bool success=1;
+	bool *s=&success;
+	uint32_t res=expr(args,s);
+	if (success){
+		printf("%x\n",result);
+	}
+	else {
+		printf("ilegal expression")
+	}
+
+}
 
 static struct {
 	char *name;
@@ -113,7 +125,7 @@ static struct {
 	{"si", "step N instruction", cmd_step},
 	{"info", "Print register state", cmd_info},
 	{"x", "examine memory", cmd_x},
-
+	{"p","print the result of expression",cmd_p}
 
 };
 

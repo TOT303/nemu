@@ -27,7 +27,7 @@ static struct rule {
 	{"&&",AND},
 	{"||",OR},
 	{"\\!",NOT}
-	{"0x[0-9]+",HEX},
+	{"0[Xx][0-9]+",HEX},
 	{"\\$[a-z]+",REG},	
 	{"\\+", '+'},			// plus				
 	{"\\-",'-'},
@@ -126,43 +126,27 @@ static bool make_token(char *e) {
 
 	return true; 
 }
-static bool checkparentheses(int p,int q) {
-	if (tokens[p].type!='('||tokens[q].type!=')'){
-		return false;
-	}
-	int i=p;
-	int j=q;
-	bool find_l=0;
-	bool find_r=0;
-	for (i;i<q-1;i++){
-		if (tokens[i].type=='('){
-			find_l=1;
-		}
-		for (j;j>i;j--){
-			if (tokens[j].type==')'){
-				find_r=1;
-				break;
-			}
-			
-		}
-		if (find_l^find_r==0){
-			find_l=find_r=0;
-			continue;
-		}
-		else {
-			return false;
-			}
-	}
-	return true;
+
+
+static bool checkparentheses(int p, int q) {
+    if (tokens[p].type != '(' || tokens[q].type != ')') return false;
+    int bal = 0;
+    for (int i = p; i <= q; i++) {
+        if (tokens[i].type == '(') bal++;
+        if (tokens[i].type == ')') bal--;
+        if (bal == 0 && i < q) return false;  
+    }
+    return bal == 0;
 }
+
+
 static int priority(int type) {
     switch (type) {
 		case AND: case OR: return 0;
-		case EQ: case NEQ   return 1;
+		case EQ: case NEQ :  return 1;
 		case '+': case '-': return 2;
 		case '*': case '/': return 3;
 		case NOT: case DEREF: case NEG: return 4;
-
 		default:            return -1; 
     }
 }
@@ -170,8 +154,11 @@ static int find_op(int p,int q){
 	int pos=-1;
 	int i;
 	int pri=INT32_MAX;
-	for (i=p;i<q;i++){
-		if (priority(tokens[i].type)==-1){
+	for (i=p;i<=q;i++){
+		if (priority(tokens[i].type)==-1||
+		    tokens[i].type==NOT||
+		    tokens[i].type==NEG||
+		    tokens[i].type==DEREF){
 			continue;
 		}
 		int j=0;
@@ -194,43 +181,63 @@ uint32_t eval(int p,int q) {
     panic("eval wrong");
   }
   else if (p == q) {
-    /* Single token.
-       For now this token should be a number.
-       Return the value of the number. */
 	if (tokens[p].type==NUM){
-		return (uint32_t)stoi(tokens[p].str);
+		return (uint32_t)strtol(tokens[p].str,NULL,10);
 	}
 	else if (tokens[p].type==HEX){
-		return (uint32_t)strtoul(tokens[p].str[0], NULL, 16);
+		return (uint32_t)strtoul(tokens[p].str, NULL, 16);
 	}
 	else if (tokens[p].type==REG){
-		return swaddr_read();
+		if (strcmp(tokens[p].str, "$eax") == 0) return cpu.eax;
+		else if (strcmp(tokens[p].str, "$ecx") == 0) return cpu.ecx;
+		else if (strcmp(tokens[p].str, "$edx") == 0) return cpu.edx;
+		else if (strcmp(tokens[p].str, "$ebx") == 0) return cpu.ebx;
+		else if (strcmp(tokens[p].str, "$esp") == 0) return cpu.esp;
+		else if (strcmp(tokens[p].str, "$ebp") == 0) return cpu.ebp;
+		else if (strcmp(tokens[p].str, "$esi") == 0) return cpu.esi;
+		else if (strcmp(tokens[p].str, "$edi") == 0) return cpu.edi;
+		else {
+			panic("eval wrong");
+			assert(0);
+			return 0;
+		}
 	}
     assert(0);
   }
   else if (checkparentheses(p, q) == true) {
-    /* The expression is surrounded by a matched pair of parentheses.
-       If that is the case, just throw away the parentheses. */
     return eval(p + 1, q - 1);
   }
   else {
-    int op = find_op(p,q);
-    uint32_t val1 = eval(p, op - 1);
-    uint32_t val2 = eval(op + 1, q);
-    switch (token[op].type) {
-      case '+': return val1 + val2;
-      case '-': return val1 - val2;
-      case '*': return val1 * val2;
-      case '/': return val1 / val2;
-	  case '==': return val1 ==val2;
-	  case '!=': return val1!=val2;
-	  case AND: return val1&&val2;
-	  case OR:return val1||val2;
-
-      default: assert(0);
-    }
+	int op = find_op(p,q);
+	if (tokens[op].type==NOT||tokens[op].type==NEG||tokens[op].type==DEREF){
+		uint32_t val=eval(op+1,q);
+		switch (tokens[op].type){
+			case NOT:return !val;
+			case NEG:return -val;
+			case DEREF:return *(uint32_t *)val;
+			default: assert(0);
+		}
+	}
+	else {
+		uint32_t val1 = eval(p, op - 1);
+		uint32_t val2 = eval(op + 1, q);
+		switch (tokens[op].type) {
+			case '+': return val1 + val2;
+			case '-': return val1 - val2;
+			case '*': return val1 * val2;
+			case '/': return val1 / val2;
+			case EQ: return val1 ==val2;
+			case NEQ: return val1!=val2;
+			case AND: return val1&&val2;
+			case OR:return val1||val2;
+			default: assert(0);
+		}
+	}
   }
 }
+
+
+
 uint32_t expr(char *e, bool *success) {
 	if(!make_token(e)) {
 		*success = false;
@@ -238,14 +245,21 @@ uint32_t expr(char *e, bool *success) {
 	}
 
 	/* TODO: Insert cotokensdes to evaluate the expression. */
+
 	for(i = 0; i < nr_token; i++){
-  		if([i].type == '*' && (i == 0 || tokens[i-1].type !=NUM)) {
+  		if(tokens[i].type == '*' && (i == 0 || tokens[i-1].type !=NUM)) {
     		tokens[i].type = DEREF;
-    		return eval(?, ?);
-  		}	
+  		}
+		if (i==0&&tokens[i].type=='-')	{
+			tokens[i].type=NEG;
+		}
+		else if ((tokens[i].type=='-')&&((tokens[i-1].type=='+')||(tokens[i-1].type=='-')||(tokens[i-1].type=='*')||(tokens[i-1].type=='/'))){
+			tokens[i].type=NEG;
+		}
 	}
-	panic("please implement me");
-	return 0;
+	uint32_t result;
+	result=eval(0,nr_token-1);
+	return result;
 }
 
 
