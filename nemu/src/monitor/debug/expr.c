@@ -25,9 +25,9 @@ static struct rule {
 	{"==", EQ},				// equal
 	{"!=",NEQ},
 	{"&&",AND},
-	{"||",OR},
-	{"\\!",NOT}
-	{"0[Xx][0-9]+",HEX},
+	{"\\|\\|",OR},
+	{"\\!",NOT},
+	{"0[xX][0-9a-fA-F]+", HEX},
 	{"\\$[a-z]+",REG},	
 	{"\\+", '+'},			// plus				
 	{"\\-",'-'},
@@ -131,7 +131,8 @@ static bool make_token(char *e) {
 static bool checkparentheses(int p, int q) {
     if (tokens[p].type != '(' || tokens[q].type != ')') return false;
     int bal = 0;
-    for (int i = p; i <= q; i++) {
+	int i;
+    for (i = p; i <= q; i++) {
         if (tokens[i].type == '(') bal++;
         if (tokens[i].type == ')') bal--;
         if (bal == 0 && i < q) return false;  
@@ -150,35 +151,35 @@ static int priority(int type) {
 		default:            return -1; 
     }
 }
-static int find_op(int p,int q){
-	int pos=-1;
-	int i;
-	int pri=INT32_MAX;
+static int find_op(int p, int q)
+{
+    int pos = -1;
+    int pri = INT32_MAX;
+    int i;
 	for (i=p;i<=q;i++){
-		if (priority(tokens[i].type)==-1||
-		    tokens[i].type==NOT||
-		    tokens[i].type==NEG||
-		    tokens[i].type==DEREF){
+		if (priority(tokens[i].type)==-1){
 			continue;
 		}
-		int j=0;
-		int k=p;
-		for (k;k<i;k++){
-			if (tokens[k].type=='(') j++;
-			if (tokens[k].type==')') j--;
+		int count=0;
+		int j;
+		for (j=p;j<i;j++){
+			if (tokens[j].type=='(') count++;
+			if (tokens[j].type==')') count--;
 		}
-		if (j!=0) continue;
-		if (pri>=priority(tokens[i].type)) {
+		if (count) continue;
+
+		if (pri>=priority(tokens[i].type)){
 			pri=priority(tokens[i].type);
 			pos=i;
 		}
 	}
-	return pos;
+	printf("op pos is %d\n",pos);
+    return pos;
 }
-
 uint32_t eval(int p,int q) {
+	printf("eval(%d, %d)\n", p, q);
   if (p > q) {
-    panic("eval wrong");
+    panic("p>q,eval wrong");
   }
   else if (p == q) {
 	if (tokens[p].type==NUM){
@@ -196,12 +197,14 @@ uint32_t eval(int p,int q) {
 		else if (strcmp(tokens[p].str, "$ebp") == 0) return cpu.ebp;
 		else if (strcmp(tokens[p].str, "$esi") == 0) return cpu.esi;
 		else if (strcmp(tokens[p].str, "$edi") == 0) return cpu.edi;
+		else if (strcmp(tokens[p].str, "$eip") == 0) return cpu.eip;
 		else {
-			panic("eval wrong");
+			panic("reg eval wrong");
 			assert(0);
 			return 0;
 		}
 	}
+	panic("cannot access value");
     assert(0);
   }
   else if (checkparentheses(p, q) == true) {
@@ -212,9 +215,9 @@ uint32_t eval(int p,int q) {
 	if (tokens[op].type==NOT||tokens[op].type==NEG||tokens[op].type==DEREF){
 		uint32_t val=eval(op+1,q);
 		switch (tokens[op].type){
-			case NOT:return !val;
-			case NEG:return -val;
-			case DEREF:return *(uint32_t *)val;
+			case NOT: return !val;
+			case NEG: return -val;
+			case DEREF: return swaddr_read(val, 4);
 			default: assert(0);
 		}
 	}
@@ -230,10 +233,12 @@ uint32_t eval(int p,int q) {
 			case NEQ: return val1!=val2;
 			case AND: return val1&&val2;
 			case OR:return val1||val2;
-			default: assert(0);
+
+			default: panic("op eval wrong");
 		}
 	}
   }
+  
 }
 
 
@@ -245,16 +250,20 @@ uint32_t expr(char *e, bool *success) {
 	}
 
 	/* TODO: Insert cotokensdes to evaluate the expression. */
-
+	int i;
 	for(i = 0; i < nr_token; i++){
-  		if(tokens[i].type == '*' && (i == 0 || tokens[i-1].type !=NUM)) {
+  		if(tokens[i].type == '*' && (i == 0 || ((tokens[i-1].type !=NUM)&&(tokens[i-1].type!=')')))) {
     		tokens[i].type = DEREF;
   		}
-		if (i==0&&tokens[i].type=='-')	{
-			tokens[i].type=NEG;
-		}
-		else if ((tokens[i].type=='-')&&((tokens[i-1].type=='+')||(tokens[i-1].type=='-')||(tokens[i-1].type=='*')||(tokens[i-1].type=='/'))){
-			tokens[i].type=NEG;
+		if (tokens[i].type == '-' &&
+			(i == 0 || tokens[i-1].type == '+' || tokens[i-1].type == '-' ||
+			tokens[i-1].type == '*' || tokens[i-1].type == '/' ||
+			tokens[i-1].type == EQ || tokens[i-1].type == NEQ ||
+			tokens[i-1].type == AND || tokens[i-1].type == OR ||
+			tokens[i-1].type == NOT || tokens[i-1].type == '(' ||
+			tokens[i-1].type == DEREF || tokens[i-1].type == NEG)) {
+				
+			tokens[i].type = NEG;
 		}
 	}
 	uint32_t result;

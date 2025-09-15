@@ -72,6 +72,12 @@ static int cmd_info(char *args) {
 		printf("\n");
 		}
 	}
+	else if (*args=='w'){
+		puts("Watchpoints:");
+		for (WP *wp = head; wp; wp = wp->next)
+			printf("#%d  %s = %#x\n", wp->NO, wp->expr, wp->new_value);
+		if (head == NULL) puts("(none)");
+	}
 	
 	return 0;
 }
@@ -104,14 +110,34 @@ static int cmd_p(char *args) {
 	bool *s=&success;
 	uint32_t res=expr(args,s);
 	if (success){
-		printf("%x\n",result);
+		printf("%d\n",res);
 	}
 	else {
-		printf("ilegal expression")
+		printf("ilegal expression");
 	}
-
+	return 0;
 }
 
+static int cmd_w(char *args) {
+	WP* wp=new_wp();
+	wp->expr=args;
+	bool success=1;
+	bool *s=&success;
+	wp->old_val=expr(args,s);
+	while (1){
+		cpu_exec(1);
+		wp->new_val=expr(args,s);
+		if (wp->old_val!=wp->new_val){
+			printf("Hint watchpoint %d at address 0x%x",wp->NO,cpu.eip);
+			nemu_state=STOP;
+			break;
+		}
+	}
+	return 0;
+}
+static int cmd_d(char *args){
+
+}
 static struct {
 	char *name;
 	char *description;
@@ -125,7 +151,8 @@ static struct {
 	{"si", "step N instruction", cmd_step},
 	{"info", "Print register state", cmd_info},
 	{"x", "examine memory", cmd_x},
-	{"p","print the result of expression",cmd_p}
+	{"p","print the result of expression",cmd_p},
+	{"w","watch point",cmd_w}
 
 };
 
