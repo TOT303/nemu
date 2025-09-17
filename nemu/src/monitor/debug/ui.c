@@ -72,12 +72,14 @@ static int cmd_info(char *args) {
 		printf("\n");
 		}
 	}
-	else if (*args=='w'){
-		puts("Watchpoints:");
-		for (WP *wp = head; wp; wp = wp->next)
-			printf("#%d  %s = %#x\n", wp->NO, wp->expr, wp->new_value);
-		if (head == NULL) puts("(none)");
-	}
+	// else if (*args=='w'){
+	// 	puts("Watchpoints:");
+	// 	for (WP *wp = head; wp; wp = wp->next){
+	// 		printf("#%d  %s = %#x\n", wp->NO, wp->expr, wp->new_value);
+	// 	}
+			
+	// 	if (head == NULL) puts("(none)");
+	// }
 	
 	return 0;
 }
@@ -118,25 +120,28 @@ static int cmd_p(char *args) {
 	return 0;
 }
 
-static int cmd_w(char *args) {
-	WP* wp=new_wp();
-	wp->expr=args;
-	bool success=1;
-	bool *s=&success;
-	wp->old_val=expr(args,s);
-	while (1){
-		cpu_exec(1);
-		wp->new_val=expr(args,s);
-		if (wp->old_val!=wp->new_val){
-			printf("Hint watchpoint %d at address 0x%x",wp->NO,cpu.eip);
-			nemu_state=STOP;
-			break;
-		}
-	}
-	return 0;
-}
-static int cmd_d(char *args){
+static int cmd_w(char *args)
+{
+    init_wp_pool();                     
+    WP *wp = new_wp();
 
+    strncpy(wp->expr, args, sizeof(wp->expr) - 1);
+    wp->expr[sizeof(wp->expr) - 1] = '\0';
+
+    bool success = true;
+    wp->old_val  = expr(wp->expr, &success);
+    if (!success) {
+        printf("Bad expression: %s\n", args);
+        free_wp(wp);
+        return 0;
+    }
+
+    printf("Watchpoint %d: %s = 0x%x\n", wp->NO, wp->expr, wp->old_val);
+    return 0;
+}
+
+static int cmd_d(char *args){
+	return 0;
 }
 static struct {
 	char *name;
@@ -152,7 +157,8 @@ static struct {
 	{"info", "Print register state", cmd_info},
 	{"x", "examine memory", cmd_x},
 	{"p","print the result of expression",cmd_p},
-	{"w","watch point",cmd_w}
+	{"w","watch point",cmd_w},
+	{"d","delete watchpoint",cmd_d},
 
 };
 

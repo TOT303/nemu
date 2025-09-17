@@ -119,7 +119,6 @@ static bool make_token(char *e) {
 		}
 
 		if(i == NR_REGEX) {
-			printf("no match at position %d\n%s\n%*.s^\n", position, e, position, "");
 			return false;
 		}
 	}
@@ -173,11 +172,11 @@ static int find_op(int p, int q)
 			pos=i;
 		}
 	}
-	printf("op pos is %d\n",pos);
+	
     return pos;
 }
 uint32_t eval(int p,int q) {
-	printf("eval(%d, %d)\n", p, q);
+	
   if (p > q) {
     panic("p>q,eval wrong");
   }
