@@ -6,5 +6,7 @@ static void do_execute(){
     REG(R_ESP)-=DATA_BYTE;
     swaddr_write(REG(R_ESP),DATA_BYTE,op_src->val);
 }
-make_instr_helper(rm);
+
+make_instr_helper(r);
+
 #include "cpu/exec/template-end.h"

@@ -6,6 +6,7 @@
 #include "data-mov/cltd.h"
 
 #include "arith/adc.h"
+#include "arith/cmp.h"
 #include "arith/dec.h"
 #include "arith/inc.h"
 #include "arith/neg.h"
@@ -19,7 +20,9 @@
 #include "control/jmp.h"
 #include "control/je.h"
 #include "control/push.h"
+#include "control/pop.h"
 #include "control/call.h"
+#include "control/ret.h"
 
 #include "logic/and.h"
 #include "logic/or.h"
