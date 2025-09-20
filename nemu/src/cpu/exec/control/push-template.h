@@ -1,0 +1,10 @@
+#include "cpu/exec/template-start.h"
+#define instr push
+
+
+static void do_execute(){
+    REG(R_ESP)-=DATA_BYTE;
+    swaddr_write(REG(R_ESP),DATA_BYTE,op_src->val);
+}
+make_instr_helper(rm);
+#include "cpu/exec/template-end.h"
