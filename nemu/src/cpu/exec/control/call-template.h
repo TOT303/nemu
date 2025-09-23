@@ -2,6 +2,7 @@
 #define instr call
 static void do_execute(){
     REG(R_ESP)-=DATA_BYTE;
+    
     swaddr_write(REG(R_ESP),DATA_BYTE,cpu.eip+DATA_BYTE+1);
     cpu.eip=cpu.eip+op_src->val;
 }

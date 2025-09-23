@@ -19,17 +19,17 @@ static make_helper(_2byte_esc);
 	
 /* 0x80 */
 make_group(group1_b,
-	inv, inv, inv, inv, 
+	add_i2rm_b, inv, inv, inv, 
 	and_i2rm_b, inv, inv, cmp_i2rm_b)
 
 /* 0x81 */
 make_group(group1_v,
-	inv, inv, inv, inv, 
+	add_i2rm_v, inv, inv, inv, 
 	and_i2rm_v, sub_i2rm_v, inv, cmp_i2rm_v)
 
 /* 0x83 */
 make_group(group1_sx_v,
-	inv, or_si2rm_v, inv, inv, 
+	add_si2rm_v, or_si2rm_v, inv, inv, 
 	and_si2rm_v, sub_si2rm_v, inv, cmp_si2rm_v)
 
 /* 0xc0 */
@@ -94,8 +94,8 @@ make_group(group7,
 /* TODO: Add more instructions!!! */
 
 helper_fun opcode_table [256] = {
-/* 0x00 */	inv, inv, inv, inv,
-/* 0x04 */	inv, inv, inv, inv,
+/* 0x00 */	add_r2rm_b, add_r2rm_v, add_rm2r_b, add_rm2r_v,
+/* 0x04 */	add_i2a_b, add_i2a_v, inv, inv,
 /* 0x08 */	inv, or_r2rm_v, or_rm2r_b, inv,
 /* 0x0c */	or_i2a_b, inv, inv, _2byte_esc,
 /* 0x10 */	inv, adc_r2rm_v, inv, inv,
@@ -123,15 +123,15 @@ helper_fun opcode_table [256] = {
 /* 0x68 */	inv, imul_i_rm2r_v, inv, imul_si_rm2r_v,
 /* 0x6c */	inv, inv, inv, inv,
 /* 0x70 */	inv, inv, inv, inv,
-/* 0x74 */	je_si_b, inv, inv, inv,
+/* 0x74 */	je_si_b, inv, jbe_si_b, inv,
 /* 0x78 */	inv, inv, inv, inv,
 /* 0x7c */	inv, inv, inv, inv,
 /* 0x80 */	group1_b, group1_v, inv, group1_sx_v, 
-/* 0x84 */	test_r2rm_b, test_r2rm_v, inv, inv,
+/* 0x84 */	test_r2rm_b, test_r2rm_v, xchg_r2rm_b, xchg_r2rm_v,
 /* 0x88 */	mov_r2rm_b, mov_r2rm_v, mov_rm2r_b, mov_rm2r_v,
 /* 0x8c */	inv, lea, inv, inv,
-/* 0x90 */	nop, inv, inv, inv,
-/* 0x94 */	inv, inv, inv, inv,
+/* 0x90 */	xchg_a2r_v, xchg_a2r_v, xchg_a2r_v, xchg_a2r_v,
+/* 0x94 */	xchg_a2r_v, xchg_a2r_v, xchg_a2r_v, xchg_a2r_v,
 /* 0x98 */	inv, cltd_v, inv, inv,
 /* 0x9c */	inv, inv, inv, inv,
 /* 0xa0 */	mov_moffs2a_b, mov_moffs2a_v, mov_a2moffs_b, mov_a2moffs_v,
@@ -144,7 +144,7 @@ helper_fun opcode_table [256] = {
 /* 0xbc */	mov_i2r_v, mov_i2r_v, mov_i2r_v, mov_i2r_v, 
 /* 0xc0 */	group2_i_b, group2_i_v, inv, ret,
 /* 0xc4 */	inv, inv, mov_i2rm_b, mov_i2rm_v,
-/* 0xc8 */	inv, inv, inv, inv,
+/* 0xc8 */	inv, leave, inv, inv,
 /* 0xcc */	int3, inv, inv, inv,
 /* 0xd0 */	group2_1_b, group2_1_v, group2_cl_b, group2_cl_v,
 /* 0xd4 */	inv, inv, nemu_trap, inv,
@@ -156,7 +156,7 @@ helper_fun opcode_table [256] = {
 /* 0xec */	inv, inv, inv, inv,
 /* 0xf0 */	inv, inv, repnz, rep,
 /* 0xf4 */	inv, inv, group3_b, group3_v,
-/* 0xf8 */	inv, inv, inv, inv,
+/* 0xf8 */	clc, inv, inv, inv,
 /* 0xfc */	inv, inv, group4, group5
 };
 
@@ -198,7 +198,7 @@ helper_fun _2byte_opcode_table [256] = {
 /* 0x88 */	inv, inv, inv, inv, 
 /* 0x8c */	inv, inv, inv, inv, 
 /* 0x90 */	inv, inv, inv, inv,
-/* 0x94 */	inv, inv, inv, inv,
+/* 0x94 */	inv, setne_rm_b, inv, inv,
 /* 0x98 */	inv, inv, inv, inv, 
 /* 0x9c */	inv, inv, inv, inv, 
 /* 0xa0 */	inv, inv, inv, inv, 
@@ -229,6 +229,8 @@ helper_fun _2byte_opcode_table [256] = {
 
 make_helper(exec) {
 	ops_decoded.opcode = instr_fetch(eip, 1);
+	if ((ops_decoded.opcode & 0xFF) == 0x95)
+    printf("opcode 0x95 handler=%p\n", opcode_table[0x95]);
 	return opcode_table[ ops_decoded.opcode ](eip);
 }
 
