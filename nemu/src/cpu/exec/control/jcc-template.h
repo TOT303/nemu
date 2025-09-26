@@ -28,7 +28,7 @@ JCC_EXEC
 #undef COND
 
 #define instr jle
-#define COND ((cpu.eflags.ZF == 1) || (cpu.eflags.SF != cpu.eflags.OF))
+#define COND  (cpu.eflags.ZF || (cpu.eflags.SF != cpu.eflags.OF))
 JCC_EXEC
 #undef instr
 #undef COND

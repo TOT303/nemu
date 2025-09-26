@@ -3,8 +3,8 @@
 #define SETCC_EXEC \
     static void do_execute() { \
         int cond = COND; \
-        OPERAND_W(op_dest, cond); \
-        print_asm(str(instr) " %s", op_dest->str); \
+        OPERAND_W(op_src, cond); \
+        print_asm(str(instr) " %s", op_src->str); \
     }\
 make_instr_helper(rm)
 
