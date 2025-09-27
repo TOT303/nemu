@@ -1,3 +1,4 @@
+
 #include "nemu.h"
 #include <stdlib.h>
 /* We use the POSIX regex functions to process regular expressions.
@@ -5,9 +6,18 @@
  */
 #include <sys/types.h>
 #include <regex.h>
+#include <elf.h>
+extern Elf32_Sym* get_symtab();
+extern char* get_strtab();
+extern int get_nr();
+
+Elf32_Sym *symtab;
+char *strtab;
+int nr_symtab_entry;
+
 
 enum {
-	NOTYPE = 256, EQ,NEQ, NUM,AND,OR,NOT,HEX,REG,DEREF,NEG
+	NOTYPE = 256, EQ,NEQ, NUM,AND,OR,NOT,HEX,REG,DEREF,NEG,SYMBOL
 	/* TODO: Add more token types */
 	
 };
@@ -22,20 +32,21 @@ static struct rule {
 	 */
 
 	{" +",	NOTYPE},        // spaces
-	{"==", EQ},				// equal
+	{"==", EQ},				
 	{"!=",NEQ},
 	{"&&",AND},
 	{"\\|\\|",OR},
 	{"\\!",NOT},
 	{"0[xX][0-9a-fA-F]+", HEX},
 	{"\\$[a-z]+",REG},	
-	{"\\+", '+'},			// plus				
+	{"\\+", '+'},				
 	{"\\-",'-'},
 	{"\\*",'*'},
 	{"\\/",'/'},
 	{"[0-9]+",NUM},
 	{"\\(",'('},
-	{"\\)",')'}
+	{"\\)",')'},
+	{"\\w+",SYMBOL}
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]) )
@@ -67,6 +78,27 @@ typedef struct token {
 Token tokens[32];
 int nr_token;
 
+static uint32_t find_symbol_addr(char *str) {
+    Elf32_Sym *symtab = get_symtab();
+    char *strtab = get_strtab();
+    int nr_symtab_entry = get_nr();
+    int i;
+    for (i = 0; i < nr_symtab_entry; i++) {
+       
+        if (symtab[i].st_name == 0) {
+            continue;
+        }
+      
+        if (ELF32_ST_TYPE(symtab[i].st_info) == STT_OBJECT || ELF32_ST_TYPE(symtab[i].st_info) == STT_FUNC) {
+            char *sym_name = &strtab[symtab[i].st_name];
+            if (strcmp(str, sym_name) == 0) {
+                return symtab[i].st_value;
+            }
+        }
+    }
+    return 0;
+}
+
 static bool make_token(char *e) {
 	int position = 0;
 	int i;
@@ -90,7 +122,7 @@ static bool make_token(char *e) {
 				tmp[substr_len] = '\0';
 
 				position += substr_len;          
-
+				uint32_t addr;
 				switch (rules[i].token_type) {
 					case NOTYPE: break;          
 					case EQ:
@@ -111,8 +143,13 @@ static bool make_token(char *e) {
 						strcpy(tokens[nr_token].str, tmp);
 						nr_token++;
 						break;
-
-					default: panic("please implement me");
+					case SYMBOL:
+						addr = find_symbol_addr(tmp);
+						if (addr == 0) panic("invalid symbol");
+						snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "%u", addr);
+						tokens[nr_token].type = SYMBOL; 
+						nr_token++;
+						break;
 				}
 				break;                    
 			}
@@ -181,7 +218,7 @@ uint32_t eval(int p,int q) {
     panic("p>q,eval wrong");
   }
   else if (p == q) {
-	if (tokens[p].type==NUM){
+	if (tokens[p].type==NUM||tokens[p].type==SYMBOL){
 		return (uint32_t)strtol(tokens[p].str,NULL,10);
 	}
 	else if (tokens[p].type==HEX){
