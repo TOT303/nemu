@@ -60,7 +60,7 @@ make_group(group2_cl_b,
 /* 0xd3 */
 make_group(group2_cl_v,
 	inv, inv, inv, inv, 
-	shl_rm_cl_v, inv, inv, inv)
+	shl_rm_cl_v, shr_rm_cl_v, inv, inv)
 
 /* 0xf6 */
 make_group(group3_b,
@@ -79,7 +79,7 @@ make_group(group4,
 
 /* 0xff */
 make_group(group5,
-	inv, dec_rm_v, inv, inv, 
+	inv, dec_rm_v, call_rm, inv, 
 	jmp_rm_l, inv, push_rm_v, inv)
 
 make_group(group6,
@@ -97,13 +97,13 @@ helper_fun opcode_table [256] = {
 /* 0x00 */	add_r2rm_b, add_r2rm_v, add_rm2r_b, add_rm2r_v,
 /* 0x04 */	add_i2a_b, add_i2a_v, inv, inv,
 /* 0x08 */	inv, or_r2rm_v, or_rm2r_b, inv,
-/* 0x0c */	or_i2a_b, inv, inv, _2byte_esc,
+/* 0x0c */	or_i2a_b, or_i2a_v, inv, _2byte_esc,
 /* 0x10 */	inv, adc_r2rm_v, inv, inv,
 /* 0x14 */	inv, inv, inv, inv,
 /* 0x18 */	inv, sbb_r2rm_v, inv, inv,
 /* 0x1c */	inv, inv, inv, inv,
 /* 0x20 */	inv, and_r2rm_v, and_rm2r_b, inv,
-/* 0x24 */	inv, inv, inv, inv,
+/* 0x24 */	inv, and_i2a_v, inv, inv,
 /* 0x28 */	inv, sub_r2rm_v, inv, sub_rm2r_v,
 /* 0x2c */	inv, inv, inv, inv,
 /* 0x30 */	inv, xor_r2rm_v, inv, inv,
@@ -152,7 +152,7 @@ helper_fun opcode_table [256] = {
 /* 0xdc */	inv, inv, inv, inv,
 /* 0xe0 */	inv, inv, inv, inv,
 /* 0xe4 */	inv, inv, inv, inv,
-/* 0xe8 */	call_si_l, jmp_si_l, inv, jmp_si_b,
+/* 0xe8 */	call_si, jmp_si_l, inv, jmp_si_b,
 /* 0xec */	inv, inv, inv, inv,
 /* 0xf0 */	inv, inv, repnz, rep,
 /* 0xf4 */	inv, inv, group3_b, group3_v,
@@ -198,15 +198,15 @@ helper_fun _2byte_opcode_table [256] = {
 /* 0x88 */	js_si_l, jns_si_l, jp_si_l, jnp_si_l, 
 /* 0x8c */	jl_si_l, jge_si_l, jle_si_l, jg_si_l, 
 /* 0x90 */	inv, inv, inv, inv,
-/* 0x94 */	inv, setne_rm_b, inv, inv,
+/* 0x94 */	sete_rm_b, setne_rm_b, inv, inv,
 /* 0x98 */	inv, inv, inv, inv, 
 /* 0x9c */	inv, inv, inv, inv, 
 /* 0xa0 */	inv, inv, inv, inv, 
 /* 0xa4 */	inv, inv, inv, inv,
 /* 0xa8 */	inv, inv, inv, inv,
-/* 0xac */	inv, inv, inv, imul_rm2r_v,
+/* 0xac */	shrdi_v, inv, inv, imul_rm2r_v,
 /* 0xb0 */	inv, inv, inv, inv, 
-/* 0xb4 */	inv, inv, movzb_v, inv, 
+/* 0xb4 */	inv, inv, movzb_v, movzw_l, 
 /* 0xb8 */	inv, inv, inv, inv,
 /* 0xbc */	inv, inv, movsb_v, movsw_l,
 /* 0xc0 */	inv, inv, inv, inv,
